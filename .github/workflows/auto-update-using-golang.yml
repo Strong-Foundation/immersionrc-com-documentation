@@ -25,13 +25,13 @@ jobs:
     steps:
       # Check out the repository code onto the runner
       - name: Check out code
-        uses: actions/checkout@v4 # Official GitHub action to clone the repo
+        uses: actions/checkout@v5 # Official GitHub action to clone the repo
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # Set up the Go environment
       - name: Set up Go
-        uses: actions/setup-go@v5 # Official GitHub action to install Go
+        uses: actions/setup-go@v6 # Official GitHub action to install Go
         with:
           go-version-file: "go.mod"
 
