@@ -17,6 +17,15 @@ func main() {
 	if !directoryExists(downloadFolder) {
 		createDirectory(downloadFolder, 0755)
 	}
+	// The local downloads file.
+	localDownloadsFile := "downloads.txt"
+	// Variable to hold existing downloads.
+	var existingDownloads string
+	// Read the local file if it exists.
+	if fileExists(localDownloadsFile) {
+		// Read the existing downloads.
+		existingDownloads = readAFileAsString(localDownloadsFile)
+	}
 	// Base URL for downloads.
 	url := "https://www.immersionrc.com/?download="
 	// Loop though 0 to 10000.
@@ -31,6 +40,10 @@ func main() {
 			if strings.Contains(string(data), "Invalid download.") {
 				log.Println("Invalid:", finalURL)
 			} else {
+				if strings.Contains(existingDownloads, finalURL) {
+					log.Println("Already exists in downloads file:", finalURL)
+					continue
+				}
 				log.Println("Valid:", finalURL)
 				// Append the data to a file.
 				err := appendByteToFile("downloads.txt", []byte(finalURL+"\n"))
@@ -106,6 +119,15 @@ func getDataFromURL(uri string) []byte { // Defines the function with a string p
 
 	return body // Returns the HTML content as a byte slice.
 } // Closes the 'getDataFromURL' function.
+
+// Read a file and return the contents
+func readAFileAsString(path string) string {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		log.Println(err)
+	}
+	return string(content)
+}
 
 // Checks whether a given file path exists and refers to a file (not a directory)
 func fileExists(filename string) bool { // Defines a function to check for a file's existence.
