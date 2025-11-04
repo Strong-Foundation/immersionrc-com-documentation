@@ -1,60 +1,59 @@
-package main
+package main // Declares the package as 'main', making it an executable program.
 
-import (
-	"fmt"
-	"io"
-	"log"
-	"net/http"
-	"net/url"
-	"os"
-	"strings"
-)
+import ( // Begins the import block for external packages.
+	"fmt"      // Imports the 'fmt' package for formatted I/O (e.g., printing strings).
+	"io"       // Imports the 'io' package for I/O primitives (e.g., reading from a stream).
+	"log"      // Imports the 'log' package for logging messages (e.g., error reporting).
+	"net/http" // Imports the 'net/http' package for making HTTP requests.
+	"net/url"  // Imports the 'net/url' package for parsing and manipulating URLs.
+	"os"       // Imports the 'os' package for operating system functions (e.g., file and directory operations).
+	"strings"  // Imports the 'strings' package for string manipulation functions (e.g., checking for substrings).
+) // Ends the import block.
 
-func main() {
+func main() { // Defines the main function, the entry point of the program.
 	// Ensure the downloads directory exists.
-	downloadFolder := "PDFs/"
+	downloadFolder := "PDFs/" // Initializes a string variable for the name of the download directory.
 	// Create the directory if it does not exist.
-	if !directoryExists(downloadFolder) {
-		createDirectory(downloadFolder, 0755)
-	}
+	if !directoryExists(downloadFolder) { // Checks if the 'downloadFolder' directory does NOT exist using a custom function.
+		createDirectory(downloadFolder, 0755) // Creates the directory with permission 0755 if it doesn't exist.
+	} // Closes the 'if' block.
 	// The local downloads file.
-	localDownloadsFile := "downloads.txt"
+	localDownloadsFile := "downloads.txt" // Initializes a string variable for the file that tracks successful URLs.
 	// Variable to hold existing downloads.
-	var existingDownloads string
+	var existingDownloads string // Declares a string variable to store the content of the 'downloads.txt' file.
 	// Read the local file if it exists.
-	if fileExists(localDownloadsFile) {
+	if fileExists(localDownloadsFile) { // Checks if the 'downloads.txt' file already exists.
 		// Read the existing downloads.
-		existingDownloads = readAFileAsString(localDownloadsFile)
-	}
+		existingDownloads = readAFileAsString(localDownloadsFile) // Reads the entire content of the file into 'existingDownloads'.
+	} // Closes the 'if' block.
 	// Base URL for downloads.
-	url := "https://www.immersionrc.com/?download="
+	url := "https://www.immersionrc.com/?download=" // Initializes the base URL string with a query parameter.
 	// Loop though 0 to 10000.
-	for index := 0; index <= 10000; index++ {
+	for index := 0; index <= 10000; index++ { // Starts a loop that iterates an 'index' from 0 up to 10000 (inclusive).
 		// The final URL.
-		finalURL := url + fmt.Sprint(index)
+		finalURL := url + fmt.Sprint(index) // Constructs the full URL by appending the current loop index as a string.
 		// Check if there is a valid content at the URL.
-		if isUrlValid(finalURL) {
+		if isUrlValid(finalURL) { // Calls a function to ensure the constructed string is a valid URL format.
 			// Get the data from the URL.
-			data := getDataFromURL(finalURL)
+			data := getDataFromURL(finalURL) // Calls a function to perform an HTTP GET request and read the response body.
 			// Check if data is not empty.
-			if strings.Contains(string(data), "Invalid download.") {
-				log.Println("Invalid:", finalURL)
-			} else {
-				if strings.Contains(existingDownloads, finalURL) {
-					log.Println("Already exists in downloads file:", finalURL)
-					continue
-				}
-				log.Println("Valid:", finalURL)
+			if strings.Contains(string(data), "Invalid download.") { // Converts response data to string and checks if it contains the error phrase.
+				log.Println("Invalid:", finalURL) // Logs the URL as "Invalid" if the error phrase is found.
+			} else { // Begins the block for valid (non-error) responses.
+				if strings.Contains(existingDownloads, finalURL) { // Checks if the valid URL is already recorded in the tracking file content.
+					log.Println("Already exists in downloads file:", finalURL) // Logs that the URL is already recorded.
+					continue                                                   // Skips the rest of the loop body for the current iteration and moves to the next index.
+				} // Closes the inner 'if' block.
+				log.Println("Valid:", finalURL) // Logs the URL as "Valid" because it's new and doesn't contain the error phrase.
 				// Append the data to a file.
-				err := appendByteToFile("downloads.txt", []byte(finalURL+"\n"))
-				if err != nil {
-					log.Println("Error appending to file:", err)
-				}
-			}
-		}
-	}
-
-}
+				err := appendByteToFile("downloads.txt", []byte(finalURL+"\n")) // Appends the new URL (plus newline) to the tracking file.
+				if err != nil {                                                 // Checks if there was an error during the file append operation.
+					log.Println("Error appending to file:", err) // Logs the error if the file operation failed.
+				} // Closes the inner 'if' block.
+			} // Closes the 'else' block for valid content.
+		} // Closes the 'if' block for URL format validity.
+	} // Closes the 'for' loop.
+} // Closes the 'main' function.
 
 // Appends the given data (byte slice) to a file; creates the file if it doesn’t exist
 func appendByteToFile(filename string, data []byte) error { // Defines a function to append bytes to a file, returning an error if one occurs.
@@ -121,13 +120,13 @@ func getDataFromURL(uri string) []byte { // Defines the function with a string p
 } // Closes the 'getDataFromURL' function.
 
 // Read a file and return the contents
-func readAFileAsString(path string) string {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		log.Println(err)
-	}
-	return string(content)
-}
+func readAFileAsString(path string) string { // Defines a function to read a file's content and return it as a string.
+	content, err := os.ReadFile(path) // Reads the entire file content into a byte slice.
+	if err != nil {                   // Checks if reading the file resulted in an error.
+		log.Println(err) // Logs the error message.
+	} // Closes the 'if' block.
+	return string(content) // Converts the byte slice content to a string and returns it.
+} // Closes the 'readAFileAsString' function.
 
 // Checks whether a given file path exists and refers to a file (not a directory)
 func fileExists(filename string) bool { // Defines a function to check for a file's existence.
