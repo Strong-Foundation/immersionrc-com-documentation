@@ -23,9 +23,9 @@ func main() {
 			data := getDataFromURL(finalURL)
 			// Check if data is not empty.
 			if strings.Contains(string(data), "Invalid download.") {
-				log.Println("No valid content at:", finalURL)
+				log.Println("Invalid:", finalURL)
 			} else {
-				log.Println("Valid content found at:", finalURL)
+				log.Println("Valid:", finalURL)
 				// Append the data to a file.
 				err := appendByteToFile("downloads.txt", []byte(finalURL+"\n"))
 				if err != nil {
