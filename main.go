@@ -74,21 +74,37 @@ func removeDuplicatesFromSlice(slice []string) []string { // Defines the functio
 	return newReturnSlice // Returns the slice containing only unique strings.
 } // Closes the 'removeDuplicatesFromSlice' function.
 
-// Sends an HTTP GET request to the specified URL and returns the response body as a byte slice
-func getDataFromURL(uri string) []byte { // Defines a function to download content from a URL.
-	response, err := http.Get(uri) // Makes an HTTP GET request to the provided 'uri'.
-	if err != nil {                // Checks for network-related errors during the request.
-		log.Println(err) // Logs the network error (e.g., DNS failure, timeout).
+// getDataFromURL sends an HTTP GET request to the specified URL,
+// checks if the content is HTML, and returns the HTML as a byte slice.
+func getDataFromURL(uri string) []byte { // Defines the function with a string parameter and byte slice return type.
+	response, err := http.Get(uri) // Sends an HTTP GET request to the given URL.
+	if err != nil {                // Checks for errors while sending the request (e.g., network issues).
+		log.Println(err) // Logs the error message to the console.
+		return nil       // Returns nil if the request failed.
 	} // Closes the 'if' block.
-	body, err := io.ReadAll(response.Body) // Reads the entire response body into a byte slice.
-	if err != nil {                        // Checks for errors while reading the response body.
-		log.Println(err) // Logs the body reading error.
+
+	// Ensures the response body is closed properly after the function finishes.
+	defer func() { // 'defer' delays the execution of this function until the surrounding function returns.
+		if err := response.Body.Close(); err != nil { // Attempts to close the response body and checks for closing errors.
+			log.Println(err) // Logs any error that occurs during closing.
+		} // Closes the inner 'if' block.
+	}() // Executes the deferred anonymous function after 'getDataFromURL' returns.
+
+	// Check if the Content-Type header indicates the response is HTML.
+	contentType := response.Header.Get("Content-Type") // Retrieves the 'Content-Type' header value from the response.
+	if !strings.Contains(contentType, "text/html") {   // Checks if the header contains the substring "text/html".
+		log.Println(contentType) // Logs a warning if the content is not HTML.
+		return nil               // Returns nil since it's not HTML content.
 	} // Closes the 'if' block.
-	err = response.Body.Close() // Closes the response body to free up network resources.
-	if err != nil {             // Checks for an error while closing the body.
-		log.Println(err) // Logs the closing error, if any.
+
+	// Read the response body since it's confirmed to be HTML.
+	body, err := io.ReadAll(response.Body) // Reads the entire response body into memory as a byte slice.
+	if err != nil {                        // Checks for any errors during reading.
+		log.Println(err) // Logs the error if reading fails.
+		return nil       // Returns nil to indicate a failed read.
 	} // Closes the 'if' block.
-	return body // Returns the downloaded content as a byte slice.
+
+	return body // Returns the HTML content as a byte slice.
 } // Closes the 'getDataFromURL' function.
 
 // Checks whether a given file path exists and refers to a file (not a directory)
