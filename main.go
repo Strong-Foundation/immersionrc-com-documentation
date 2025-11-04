@@ -46,25 +46,25 @@ func main() { // Defines the main function, the entry point of the program.
 				} // Closes the inner 'if' block.
 				log.Println("Valid:", finalURL) // Logs the URL as "Valid" because it's new and doesn't contain the error phrase.
 				// Append the data to a file.
-				err := appendByteToFile("downloads.txt", []byte(finalURL+"\n")) // Appends the new URL (plus newline) to the tracking file.
-				if err != nil {                                                 // Checks if there was an error during the file append operation.
-					log.Println("Error appending to file:", err) // Logs the error if the file operation failed.
-				} // Closes the inner 'if' block.
+				appendByteToFile(localDownloadsFile, []byte(finalURL+"\n")) // Appends the new URL (plus newline) to the tracking file.
 			} // Closes the 'else' block for valid content.
 		} // Closes the 'if' block for URL format validity.
 	} // Closes the 'for' loop.
 } // Closes the 'main' function.
 
 // Appends the given data (byte slice) to a file; creates the file if it doesn’t exist
-func appendByteToFile(filename string, data []byte) error { // Defines a function to append bytes to a file, returning an error if one occurs.
+func appendByteToFile(filename string, data []byte)  { // Defines a function to append bytes to a file, returning an error if one occurs.
 	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644) // Opens the file with flags: Append, Create (if not exist), Write-Only, and permissions 0644.
 	if err != nil {                                                               // Checks if opening or creating the file failed.
-		return err // Returns the error to the caller.
+		log.Println(err) // Logs the error message.
+		return // Returns the error to the caller.
 	} // Closes the 'if' block.
 	defer file.Close() // Schedules the file to be closed when the function exits (even if an error occurs).
 
 	_, err = file.Write(data) // Writes the 'data' byte slice to the opened file.
-	return err                // Returns 'nil' on successful write, or the error if writing failed.
+	if err != nil {            // Checks if the write operation failed.
+		log.Println(err) // Logs the error message.
+	} // Closes the 'if' block.
 } // Closes the 'appendByteToFile' function.
 
 // Verifies whether a given string is a valid URL by parsing it
