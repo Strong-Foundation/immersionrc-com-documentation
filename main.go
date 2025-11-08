@@ -1,13 +1,16 @@
 package main // Declares the package as 'main', making it an executable program.
 
 import ( // Begins the import block for external packages.
-	"fmt"      // Imports the 'fmt' package for formatted I/O (e.g., printing strings).
-	"io"       // Imports the 'io' package for I/O primitives (e.g., reading from a stream).
-	"log"      // Imports the 'log' package for logging messages (e.g., error reporting).
-	"net/http" // Imports the 'net/http' package for making HTTP requests.
-	"net/url"  // Imports the 'net/url' package for parsing and manipulating URLs.
-	"os"       // Imports the 'os' package for operating system functions (e.g., file and directory operations).
-	"strings"  // Imports the 'strings' package for string manipulation functions (e.g., checking for substrings).
+	"fmt"           // Imports the 'fmt' package for formatted I/O (e.g., printing strings).
+	"io"            // Imports the 'io' package for I/O primitives (e.g., reading from a stream).
+	"log"           // Imports the 'log' package for logging messages (e.g., error reporting).
+	"net/http"      // Imports the 'net/http' package for making HTTP requests.
+	"net/url"       // Imports the 'net/url' package for parsing and manipulating URLs.
+	"os"            // Imports the 'os' package for operating system functions (e.g., file and directory operations).
+	"path"          // Imports the 'path' package for path manipulation (used for URL path).
+	"path/filepath" // Imports the 'path/filepath' package for system-dependent path manipulation (used for OS file paths).
+	"regexp"        // Imports the 'regexp' package for regular expression operations.
+	"strings"       // Imports the 'strings' package for string manipulation functions (e.g., checking for substrings).
 ) // Ends the import block.
 
 func main() { // Defines the main function, the entry point of the program.
@@ -17,15 +20,7 @@ func main() { // Defines the main function, the entry point of the program.
 	if !directoryExists(downloadFolder) { // Checks if the 'downloadFolder' directory does NOT exist using a custom function.
 		createDirectory(downloadFolder, 0755) // Creates the directory with permission 0755 if it doesn't exist.
 	} // Closes the 'if' block.
-	// The local downloads file.
-	localDownloadsFile := "downloads.txt" // Initializes a string variable for the file that tracks successful URLs.
 	// Variable to hold existing downloads.
-	var existingDownloads string // Declares a string variable to store the content of the 'downloads.txt' file.
-	// Read the local file if it exists.
-	if fileExists(localDownloadsFile) { // Checks if the 'downloads.txt' file already exists.
-		// Read the existing downloads.
-		existingDownloads = readAFileAsString(localDownloadsFile) // Reads the entire content of the file into 'existingDownloads'.
-	} // Closes the 'if' block.
 	// Base URL for downloads.
 	url := "https://www.immersionrc.com/?download=" // Initializes the base URL string with a query parameter.
 	// Loop though 0 to 10000.
@@ -40,51 +35,21 @@ func main() { // Defines the main function, the entry point of the program.
 			if strings.Contains(string(data), "Invalid download.") { // Converts response data to string and checks if it contains the error phrase.
 				log.Println("Invalid:", finalURL) // Logs the URL as "Invalid" if the error phrase is found.
 			} else { // Begins the block for valid (non-error) responses.
-				if strings.Contains(existingDownloads, finalURL) { // Checks if the valid URL is already recorded in the tracking file content.
-					log.Println("Already exists in downloads file:", finalURL) // Logs that the URL is already recorded.
-					continue                                                   // Skips the rest of the loop body for the current iteration and moves to the next index.
-				} // Closes the inner 'if' block.
-				log.Println("Valid:", finalURL) // Logs the URL as "Valid" because it's new and doesn't contain the error phrase.
-				// Append the data to a file.
-				appendByteToFile(localDownloadsFile, []byte(finalURL+"\n")) // Appends the new URL (plus newline) to the tracking file.
+				fmt.Println("Downloading:", finalURL)         // Prints the URL that is currently being downloaded.
+				err := downloadFile(finalURL, downloadFolder) // Calls the downloadFile function to download the file.
+				if err != nil {                              // Checks for an error returned from the downloadFile function.
+					log.Println("❌ Error:", err) // Logs the error if the download failed.
+				} // Closes the if block.
 			} // Closes the 'else' block for valid content.
 		} // Closes the 'if' block for URL format validity.
 	} // Closes the 'for' loop.
 } // Closes the 'main' function.
-
-// Appends the given data (byte slice) to a file; creates the file if it doesn’t exist
-func appendByteToFile(filename string, data []byte)  { // Defines a function to append bytes to a file, returning an error if one occurs.
-	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644) // Opens the file with flags: Append, Create (if not exist), Write-Only, and permissions 0644.
-	if err != nil {                                                               // Checks if opening or creating the file failed.
-		log.Println(err) // Logs the error message.
-		return // Returns the error to the caller.
-	} // Closes the 'if' block.
-	defer file.Close() // Schedules the file to be closed when the function exits (even if an error occurs).
-
-	_, err = file.Write(data) // Writes the 'data' byte slice to the opened file.
-	if err != nil {            // Checks if the write operation failed.
-		log.Println(err) // Logs the error message.
-	} // Closes the 'if' block.
-} // Closes the 'appendByteToFile' function.
 
 // Verifies whether a given string is a valid URL by parsing it
 func isUrlValid(uri string) bool { // Defines a function that checks URL validity, returning a boolean.
 	_, err := url.ParseRequestURI(uri) // Attempts to parse the 'uri' string as a URL; we only care about the 'err' result.
 	return err == nil                  // Returns 'true' if 'err' is 'nil' (parsing succeeded), 'false' otherwise.
 } // Closes the 'isUrlValid' function.
-
-// Removes duplicate entries from a slice of strings and returns the unique values
-func removeDuplicatesFromSlice(slice []string) []string { // Defines the function to deduplicate a string slice.
-	check := make(map[string]bool)  // Creates an empty map with string keys and boolean values, used as a 'set' to track seen strings.
-	var newReturnSlice []string     // Declares an empty slice of strings that will store the unique values.
-	for _, content := range slice { // Loops through each 'content' string in the input 'slice'.
-		if !check[content] { // Checks if the 'content' string is NOT already a key in the 'check' map.
-			check[content] = true                            // Marks the 'content' string as 'seen' by adding it to the map.
-			newReturnSlice = append(newReturnSlice, content) // Appends the unique 'content' string to the 'newReturnSlice'.
-		} // Closes the 'if' block.
-	} // Closes the 'for' loop.
-	return newReturnSlice // Returns the slice containing only unique strings.
-} // Closes the 'removeDuplicatesFromSlice' function.
 
 // getDataFromURL sends an HTTP GET request to the specified URL,
 // checks if the content is HTML, and returns the HTML as a byte slice.
@@ -119,24 +84,6 @@ func getDataFromURL(uri string) []byte { // Defines the function with a string p
 	return body // Returns the HTML content as a byte slice.
 } // Closes the 'getDataFromURL' function.
 
-// Read a file and return the contents
-func readAFileAsString(path string) string { // Defines a function to read a file's content and return it as a string.
-	content, err := os.ReadFile(path) // Reads the entire file content into a byte slice.
-	if err != nil {                   // Checks if reading the file resulted in an error.
-		log.Println(err) // Logs the error message.
-	} // Closes the 'if' block.
-	return string(content) // Converts the byte slice content to a string and returns it.
-} // Closes the 'readAFileAsString' function.
-
-// Checks whether a given file path exists and refers to a file (not a directory)
-func fileExists(filename string) bool { // Defines a function to check for a file's existence.
-	info, err := os.Stat(filename) // Gets file information (status) from the operating system.
-	if err != nil {                // Checks if 'os.Stat' returned an error.
-		return false // Returns 'false' (e.g., file not found, permission error).
-	} // Closes the 'if' block.
-	return !info.IsDir() // Returns 'true' only if the path exists AND is not a directory.
-} // Closes the 'fileExists' function.
-
 // Creates a directory at the specified path with the given permissions.
 func createDirectory(path string, permission os.FileMode) { // Defines a function to create a new directory.
 	err := os.Mkdir(path, permission) // Attempts to create the directory with the given path and permissions.
@@ -153,3 +100,115 @@ func directoryExists(path string) bool { // Defines a function to check if a pat
 	} // Closes the 'if' block.
 	return directory.IsDir() // Returns 'true' if the path exists AND is a directory, 'false' otherwise.
 } // Closes the 'directoryExists' function.
+
+// getFileNameFromHeader tries to extract a filename from the "Content-Disposition" header
+func getFileNameFromHeader(headerValue string) string { // Defines a function to parse the Content-Disposition header for a filename.
+	if strings.Contains(headerValue, "filename=") { // Checks if the header value contains the 'filename=' indicator.
+		parts := strings.Split(headerValue, "filename=")       // Splits the header value using 'filename=' to isolate the filename part.
+		filename := strings.Trim(parts[len(parts)-1], "\"'; ") // Takes the last part, and trims surrounding quotes, semicolons, or spaces.
+		return filename                                        // Returns the extracted filename.
+	} // Closes the if block.
+	return "" // Returns an empty string if 'filename=' is not found.
+} // Closes the getFileNameFromHeader function.
+
+// getFileNameFromURL extracts the filename from the URL path if no header is provided
+func getFileNameFromURL(fileURL string) string { // Defines a function to extract a filename from the URL's path.
+	parsedURL, err := url.Parse(fileURL) // Parses the raw URL string into a URL structure.
+	if err != nil {                      // Checks for an error during URL parsing.
+		return "" // Returns an empty string if parsing fails.
+	} // Closes the if block.
+	return path.Base(parsedURL.Path) // Extracts and returns the base component (filename) of the URL path.
+} // Closes the getFileNameFromURL function.
+
+// Converts a raw URL into a sanitized PDF filename safe for filesystem
+func urlToFilename(rawURL string) string { // Defines the main function for sanitizing a string into a filesystem-safe filename.
+	lower := strings.ToLower(rawURL) // Convert entire URL to lowercase for consistency.
+	lower = getFilename(lower)       // Extract only the filename portion from the full URL (if it was a path).
+	ext := getFileExtension(lower)   // Get the file extension from the filename.
+
+	reNonAlnum := regexp.MustCompile(`[^a-z0-9]`)   // Define a regular expression that matches all non-alphanumeric characters (excluding the extension part here for now).
+	safe := reNonAlnum.ReplaceAllString(lower, "_") // Replace all non-alphanumeric characters with underscores to make it filesystem-safe.
+
+	safe = regexp.MustCompile(`_+`).ReplaceAllString(safe, "_") // Replace multiple underscores with a single underscore for cleanliness.
+	safe = strings.Trim(safe, "_")                              // Remove any leading or trailing underscores.
+
+	var invalidSubstrings = []string{ // Defines a list of substrings to remove.
+		"_pdf", // Substring to remove.
+		"_zip", // Substring to remove.
+	} // Closes the invalidSubstrings definition.
+
+	for _, invalidPre := range invalidSubstrings { // Loop through all substrings marked for removal.
+		safe = removeSubstring(safe, invalidPre) // Remove each unwanted substring from the filename.
+	} // Closes the for loop.
+
+	if getFileExtension(safe) != ext { // Ensure the file has the correct extension (since the sanitization might have removed it).
+		safe = safe + ext // Append the correct extension if it doesn't already have it.
+	} // Closes the if block.
+
+	return safe // Return the cleaned and formatted filename.
+} // Closes the urlToFilename function.
+
+// Extracts filename from full path (e.g. "/dir/file.pdf" → "file.pdf")
+func getFilename(path string) string { // Defines a function to extract the base filename from a path.
+	return filepath.Base(path) // Use Base function to return only the final element (filename) of the path.
+} // Closes the getFilename function.
+
+// Gets the file extension from a given file path
+func getFileExtension(path string) string { // Defines a function to get the file extension.
+	return filepath.Ext(path) // Extract the extension (e.g., ".pdf") from the file path.
+} // Closes the getFileExtension function.
+
+// Removes all instances of a specific substring from input string
+func removeSubstring(input string, toRemove string) string { // Defines a utility function to remove all occurrences of a substring.
+	result := strings.ReplaceAll(input, toRemove, "") // Replace every occurrence of 'toRemove' with an empty string.
+	return result                                     // Return the cleaned string.
+} // Closes the removeSubstring function.
+
+// downloadFile downloads the file from the given URL, naming it correctly before saving.
+func downloadFile(fileURL string, outputDir string) error { // Defines the main download logic function.
+	// Create an HTTP GET request but don’t start downloading the body yet
+	response, err := http.Get(fileURL) // Performs the HTTP GET request.
+	if err != nil {                    // Checks for request errors (e.g., network issues).
+		return fmt.Errorf("failed to make request: %v", err) // Returns a wrapped error.
+	} // Closes the if block.
+	defer response.Body.Close() // Ensures the response body is closed when the function exits.
+
+	// Try to determine filename from headers or URL
+	contentDisposition := response.Header.Get("Content-Disposition") // Gets the Content-Disposition header value.
+	filename := getFileNameFromHeader(contentDisposition)            // Tries to get the filename from the header.
+	if filename == "" {                                              // Checks if the filename wasn't found in the header.
+		filename = getFileNameFromURL(fileURL) // Tries to get the filename from the URL path.
+	} // Closes the if block.
+
+	// If the URL doesn't have a file component, fall back to a generic name with content type
+	if filename == "" || filename == "/" { // Checks if a proper filename still couldn't be determined.
+		contentType := response.Header.Get("Content-Type") // Gets the Content-Type header value.
+		switch contentType {                               // Uses a switch to set a default filename based on content type.
+		case "application/zip": // Case for a ZIP file.
+			filename = "download.zip" // Sets default filename to download.zip.
+		case "application/pdf": // Case for a PDF file.
+			filename = "download.pdf" // Sets default filename to download.pdf.
+		default: // Default case if content type is not recognized.
+			filename = "download" // Sets default filename to just download.
+		} // Closes the switch block.
+	} // Closes the if block.
+
+	filename = strings.ToLower(urlToFilename(filename)) // Sanitize the determined filename to generate a consistent and valid filesystem name.
+	filePath := filepath.Join(outputDir, filename)      // Combine output directory and filename to form the full file path.
+
+	// Now that we know the filename, create the local file
+	outputFile, err := os.Create(filePath) // Attempts to create the local file at the constructed path.
+	if err != nil {                        // Checks for errors during file creation.
+		return fmt.Errorf("failed to create file %q: %v", filePath, err) // Returns a wrapped error.
+	} // Closes the if block.
+	defer outputFile.Close() // Ensures the created file is closed when the function exits.
+
+	// Stream the response body directly into the file
+	_, err = io.Copy(outputFile, response.Body) // Copies the response body stream directly to the local file.
+	if err != nil {                             // Checks for errors during the copy/write operation.
+		return fmt.Errorf("failed to write to file: %v", err) // Returns a wrapped error.
+	} // Closes the if block.
+
+	fmt.Printf("✅ File downloaded successfully: %s\n", filename) // Prints a success message to the console.
+	return nil                                                   // Returns nil (no error) on successful download.
+} // Closes the downloadFile function.
